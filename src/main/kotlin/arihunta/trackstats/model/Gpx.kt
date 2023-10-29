@@ -10,9 +10,9 @@ import java.util.GregorianCalendar
 import java.util.Date
 import javax.xml.datatype.DatatypeFactory
 import java.io.File
-import javax.xml.bind.JAXBContext
-import javax.xml.bind.Marshaller
-import javax.xml.bind.JAXBElement
+import jakarta.xml.bind.JAXBContext
+import jakarta.xml.bind.Marshaller
+import jakarta.xml.bind.JAXBElement
 import java.nio.file.Path
 
 fun GpxType.toTracks(): List<Track> =

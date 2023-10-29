@@ -3,7 +3,7 @@
  */
 
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version "1.9.10"
+	id 'org.jetbrains.kotlin.jvm' version "1.6.0"
 	id 'java'
 	id 'application'
 }
@@ -18,17 +18,28 @@ repositories {
 	mavenCentral()
 }
 
+def generated_dir = "src/gen/java"
+sourceSets.main.java.srcDirs += ["$generated_dir"]
+
+// JAXB configuration holds classpath for running the JAXB XJC compiler
+configurations {
+	jaxb
+}
+
 dependencies {
 
-	implementation "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10"
+	implementation "org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.0"
 
-	implementation 'javax.xml.bind:jaxb-api:2.3.1'
+	implementation "org.glassfish.jaxb:jaxb-runtime:4.0.1"
+	implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.0' // In JAXB v3, 'javax.xml.bind' was moved to 'jakarta.xml.bind'
 
 	implementation "org.apache.logging.log4j:log4j-api:2.9.1"
 	implementation "org.apache.logging.log4j:log4j-core:2.9.1"
 
 	testImplementation 'junit:junit:4.12'
 
+	jaxb "org.glassfish.jaxb:jaxb-xjc:4.0.1"
+	jaxb "org.glassfish.jaxb:jaxb-runtime:4.0.1"
 }
 
 jar {
@@ -41,15 +52,39 @@ jar {
 	}
 }
 
-task generateJaxb(type:Exec) {
+// From https://stackoverflow.com/a/73027169/1540422
+// Cookie cutter function for defining multiple XJC tasks
+def addXjcTask(taskName, schema, dest) {
 
-	group 'TrackStats'
-	description 'Generates schema files.'
+	// If you haven't already, create the generated output dir before running XJC or it will fail
+	file(dest).mkdirs()
 
-	def gpxSchema = "./src/main/resources/gpx-1.1.xsd"
-	def gpxExtensionSchema = "./src/main/resources/GpxExtensionsv3.xsd"
-	def kmlSchema = "./src/main/resources/kml-2.1.xsd"
-	def outputDir = "./src/main/java"
-	commandLine "xjc", "-d", outputDir, gpxSchema, gpxExtensionSchema, kmlSchema
+	// The main XJC task, calls XJCFacade which is the entry point of the XJC JAR
+	tasks.create(name: taskName, type: JavaExec) {
+		classpath configurations.jaxb
+		mainClass = 'com.sun.tools.xjc.XJCFacade'
 
+		// To explore available args, download the XJC JAR and run java -jar jaxb-xjc.jar --help
+		args schema, "-d", dest, "-no-header"
+	}
+}
+
+// Add all the XJC tasks you need
+addXjcTask("generateGpxSources",
+		"src/main/resources/gpx-1.1.xsd",
+		"$generated_dir")
+
+addXjcTask("generateGpxExtensionSources",
+		"src/main/resources/GpxExtensionsv3.xsd",
+		"$generated_dir")
+
+addXjcTask("generateKmlSources",
+		"src/main/resources/kml-2.1.xsd",
+		"$generated_dir")
+
+tasks.register("generateSources") {
+	description "Generate Java sources fram XSD files"
+	dependsOn tasks.getByName("generateGpxSources")
+	dependsOn tasks.getByName("generateGpxExtensionSources")
+	dependsOn tasks.getByName("generateKmlSources")
 }
