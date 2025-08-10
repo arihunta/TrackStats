@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<!-- Custom bindings from https://blog.lunatech.com/posts/2008-10-17-generating-kml-restful-clients -->
+<bindings xmlns="https://jakarta.ee/xml/ns/jaxb" version="3.0" xmlns:kml="http://www.opengis.net/kml/2.2">
+  <bindings scd="kml:scale">
+    <factoryMethod name="scaleliteral" />
+  </bindings>
+  <bindings scd="kml:snippet">
+    <factoryMethod name="snippetliteral" />
+  </bindings>
+  <bindings scd="kml:Snippet">
+    <property name="snippetDeprecated"/>
+  </bindings>
+  <bindings scd="kml:Link">
+    <property name="kmlLink"/>
+  </bindings>
+</bindings>
+
