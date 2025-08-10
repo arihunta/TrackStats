@@ -54,7 +54,7 @@ jar {
 
 // From https://stackoverflow.com/a/73027169/1540422
 // Cookie cutter function for defining multiple XJC tasks
-def addXjcTask(taskName, schema, dest) {
+def addXjcTask(taskName, schema, dest, bindings = null) {
 
 	// If you haven't already, create the generated output dir before running XJC or it will fail
 	file(dest).mkdirs()
@@ -65,7 +65,12 @@ def addXjcTask(taskName, schema, dest) {
 		mainClass = 'com.sun.tools.xjc.XJCFacade'
 
 		// To explore available args, download the XJC JAR and run java -jar jaxb-xjc.jar --help
-		args schema, "-d", dest, "-no-header"
+		if (bindings) {
+    		args schema, "-d", dest, "-no-header", "-b", bindings, "-extension", "-XautoNameResolution"
+		}
+		else {
+            args schema, "-d", dest, "-no-header"
+		}
 	}
 }
 
@@ -79,12 +84,19 @@ addXjcTask("generateGpxExtensionSources",
 		"$generated_dir")
 
 addXjcTask("generateKmlSources",
-		"src/main/resources/kml-2.1.xsd",
-		"$generated_dir")
+		"src/main/resources/kml22/ogckml22.xsd",
+		"$generated_dir",
+        "src/main/resources/kml22/custom-bindings.xjb")
+
+addXjcTask("generateKmlExtensionSources",
+		"src/main/resources/kml22/kml22gx.xsd",
+		"$generated_dir",
+		"src/main/resources/kml22/custom-bindings.xjb")
 
 tasks.register("generateSources") {
 	description "Generate Java sources fram XSD files"
-	dependsOn tasks.getByName("generateGpxSources")
-	dependsOn tasks.getByName("generateGpxExtensionSources")
+    dependsOn tasks.getByName("generateGpxSources")
+    dependsOn tasks.getByName("generateGpxExtensionSources")
 	dependsOn tasks.getByName("generateKmlSources")
+    dependsOn tasks.getByName("generateKmlExtensionSources")
 }
